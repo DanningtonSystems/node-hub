@@ -1,6 +1,6 @@
 {
   "name": "node-hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A fully fledged terminal-based hub solution, with SSH, system information, and more. Written in Node.js. ",
   "main": "./src/hub",
   "bin": "./src/hub",
@@ -10,7 +10,8 @@
   "private": false,
   "scripts": {
     "start": "node ./src/hub",
-    "build": "pkg -t node14-linux . --output ./bin/hub"
+    "build": "pkg -t node14-linux . --output ./bin/hub",
+    "install": "yarn build && sudo cp -r ./bin/hub /usr/bin/hub"
   },
   "dependencies": {
     "chalk": "^4.1.2",

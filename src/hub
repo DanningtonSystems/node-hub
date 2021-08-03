@@ -62,8 +62,8 @@ async function menu() {
         type: "select",
         message: chalk.blueBright("Welcome to node-hub. What would you like to do?"),
         choices: [
-            { title: 'Terminal', description: "Open a terminal", value: "terminal" },
             { title: 'SSH Ring', description: "Access systems remotely from node-hub", value: "ssh", disabled: sshBool },
+            { title: 'Terminal', description: "Open a terminal", value: "terminal" },
             { title: chalk.magenta("Settings"), description: "Configure node-hub to your liking", value: "advanced" },
             { title: chalk.blue("⭯ Exit"), value: "return", description: "Exit node-hub" }
           ],
