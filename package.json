@@ -1,6 +1,6 @@
 {
   "name": "node-hub",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A fully fledged terminal-based hub solution, with SSH, system information, and more. Written in Node.js. ",
   "main": "./src/hub",
   "bin": "./src/hub",
