@@ -1,0 +1,24 @@
+{
+  "name": "node-hub",
+  "version": "1.0.0",
+  "description": "A fully fledged terminal-based hub solution, with SSH, system information, and more. Written in Node.js. ",
+  "main": "./src/hub",
+  "bin": "./src/hub",
+  "repository": "https://github.com/DanningtonSystems/node-hub.git",
+  "author": "Daniel Hyders <git@bean.codes>",
+  "license": "GPL-3.0-or-later",
+  "private": false,
+  "scripts": {
+    "start": "node ./src/hub",
+    "build": "pkg -t node14-linux . --output ./bin/hub"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "open": "^8.2.1",
+    "open-editor": "^3.0.0",
+    "prompts": "^2.4.1"
+  },
+  "devDependencies": {
+    "pkg": "^5.3.1"
+  }
+}
