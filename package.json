@@ -11,12 +11,14 @@
   "scripts": {
     "start": "node ./src/hub",
     "build": "pkg -t node14-linux . --output ./bin/hub",
-    "install": "yarn build && sudo cp -r ./bin/hub /usr/bin/hub"
+    "make": "yarn build && sudo cp -r ./bin/hub /usr/bin/hub"
   },
   "dependencies": {
     "chalk": "^4.1.2",
+    "nodejs-tcp-ping": "^1.0.3",
     "open": "^8.2.1",
     "open-editor": "^3.0.0",
+    "ping": "^0.4.1",
     "prompts": "^2.4.1"
   },
   "devDependencies": {

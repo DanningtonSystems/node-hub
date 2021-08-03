@@ -27,8 +27,12 @@ const open = require("open");
 const openEditor = require('open-editor');
 const prompt = require("prompts");
 
+const tcp = require("nodejs-tcp-ping");
+const icmp = require("ping");
+
 const loadConf = require("./lib/loadConf");
 const saveConf = require("./lib/saveConf");
+const halt = require("./lib/pressAnyKey");
 const conf = loadConf();
 
 if (!fs.existsSync(path.join(os.homedir() + "/Documents/node-hub/keys"))) {
@@ -62,10 +66,11 @@ async function menu() {
         type: "select",
         message: chalk.blueBright("Welcome to node-hub. What would you like to do?"),
         choices: [
-            { title: 'SSH Ring', description: "Access systems remotely from node-hub", value: "ssh", disabled: sshBool },
-            { title: 'Terminal', description: "Open a terminal", value: "terminal" },
-            { title: chalk.magenta("Settings"), description: "Configure node-hub to your liking", value: "advanced" },
-            { title: chalk.blue("⭯ Exit"), value: "return", description: "Exit node-hub" }
+            { title: '🗝️  SSH Ring', description: "Access systems remotely from node-hub", value: "ssh", disabled: sshBool },
+            { title: '📡 Pingtester', description: "Ping other hosts using TCP or ICMP", value: "pingtool" },
+            { title: '🎚️  Terminal', description: "Open a terminal", value: "terminal" },
+            { title: chalk.magenta("🔧 Settings"), description: "Configure node-hub to your liking", value: "advanced" },
+            { title: chalk.blue("⭯  Exit"), value: "return", description: "Exit node-hub" }
           ],
         initial: 0
     });
@@ -82,7 +87,9 @@ async function menu() {
         process.exit();
     } if (mc === "advanced") {
         settings();
-    }
+    } if (mc === "pingtool") {
+        return pingTool();
+    };
 };
 
 async function ssh() {
@@ -100,25 +107,25 @@ async function ssh() {
     });
 
     sshpromptchoice.push({
-        title: chalk.green("Add a system"),
+        title: chalk.green("📝 Add a system"),
         value: "addserver",
         description: "Add a new system to the SSH ring"
     });
 
     sshpromptchoice.push({
-        title: chalk.red("Delete a system"),
+        title: chalk.red("🗑️  Delete a system"),
         value: "delserver",
         description: "Delete a system from the SSH ring"
     });
 
     sshpromptchoice.push({
-        title: chalk.magenta("Open key folder"),
+        title: chalk.magenta("📂 Open key folder"),
         value: "keyfolder",
         description: "Open folder where keys for the SSH ring are stored"
     });
 
     sshpromptchoice.push({
-        title: chalk.blue("⭯ Return"),
+        title: chalk.blue("⭯  Return"),
         value: "return",
         description: "Return to node-hub's main menu"
     });
@@ -224,10 +231,10 @@ async function settings() {
             name: "choice",
             message: "Select an option",
             choices: [
-                { title: "Set path to terminal", value: "term", description: "Change the terminal used for some of node-hub's tools" },
-                { title: "SSH ring settings", value: "ssh", description: "Configure node-hub's SSH ring" },
-                { title: chalk.red("ADVANCED: Open config.json"), value: "config", description: "Manually edit the configuration file for node-hub" },
-                { title: chalk.blue("⭯ Return"), value: "return", description: "Return to node-hub's main menu" }
+                { title: "📜 Set path to terminal", value: "term", description: "Change the terminal used for some of node-hub's tools" },
+                { title: "🔗 SSH ring settings", value: "ssh", description: "Configure node-hub's SSH ring" },
+                { title: chalk.red("🏗️  ADVANCED: Open config.json"), value: "config", description: "Manually edit the configuration file for node-hub" },
+                { title: chalk.blue("⭯  Return"), value: "return", description: "Return to node-hub's main menu" }
             ]
         }
     ]);
@@ -289,8 +296,8 @@ async function sshsettings() {
             name: "choice",
             message: "Select an option",
             choices: [
-                { title: "Ring defaults", value: "defaults", description: "Configure defaults for creating new systems in the SSH ring" },
-                { title: chalk.magenta(`${conf.ssh.enabled ? "Disable" : "Enable"} SSH ring`), value: "togglessh", description: "Toggle the SSH ring" },
+                { title: "📜 Ring defaults", value: "defaults", description: "Configure defaults for creating new systems in the SSH ring" },
+                { title: chalk.magenta(`🔐 ${conf.ssh.enabled ? "Disable" : "Enable"} SSH ring`), value: "togglessh", description: "Toggle the SSH ring" },
                 { title: chalk.blue("⭯ Return"), value: "return", description: "Return to Settings" }
             ]
         }
@@ -332,9 +339,9 @@ async function sshsettings() {
                 name: "choice",
                 message: "Select a ring default to configure",
                 choices: [
-                    { title: "Username", value: "username", description: "Configure default usernames" },
-                    { title: "Port", value: "port", description: "Configure the default port" },
-                    { title: "SSH key", value: "key", description: "Configure the default SSH key to be used at login" },
+                    { title: "🧍 Username", value: "username", description: "Configure default usernames" },
+                    { title: "📡 Port", value: "port", description: "Configure the default port" },
+                    { title: "🔑 SSH key", value: "key", description: "Configure the default SSH key to be used at login" },
                     { title: chalk.blue("⭯ Return"), value: "return", description: "Return to SSH settings" }
                 ]
             }
@@ -414,4 +421,71 @@ async function sshsettings() {
             return sshsettings();
         };
     };
+};
+
+async function pingTool() {
+    console.clear();
+
+    let pingprompt = await prompt([
+        {
+            type: "autocomplete",
+            name: "type",
+            message: "Type of ping request",
+            choices: [
+                { title: "TCP", value: "tcp", description: "Ping a host using the TCP protocol" },
+                { title: "ICMP", value: "icmp", description: "Ping a host using the ICMP protocol" },
+            ]
+        },
+        {
+            type: "text",
+            name: "host",
+            message: "The hostname of the server that will be pinged (and :[port] if TCP, defaults to port 80)"
+        }
+    ]);
+
+    if (pingprompt.host === undefined) return menu();
+    if (pingprompt.type === "tcp") {
+        console.log(chalk.yellow(`Pinging ${pingprompt.host}...`));
+        let err = false;
+        const pingtcp = await tcp.tcpPing({
+            attempts: 1,
+            host: pingprompt.host.split(":")[0], 
+            port: parseInt(pingprompt.host.split(":")[1]) || 80,
+            timeout: 2000
+        }).catch(e => {
+            err = true;
+            console.log(chalk.blue(`tcp:${pingprompt.host} is ${chalk["red"].bold("offline")}`));
+        });
+
+        if (err == false) {
+            if (Math.round(pingtcp[0].ping) === 2001) console.log(chalk.blue(`tcp:${pingprompt.host} is ${chalk["red"].bold("offline")}`));
+            else console.log(chalk.blue(`tcp:${pingprompt.host} is ${chalk["green"].bold("online")} (response sent after ${Math.round(pingtcp[0].ping)}ms)`));
+        };
+
+        try {
+            await halt(chalk.yellow("Press any key to continue..."));
+        } catch (e) {
+            // Nothing's actually being catched, this is only for cases like SIGINT (Ctrl+C) and stuff like that
+        };
+    } if (pingprompt.type === "icmp") {
+        console.log(chalk.yellow(`Pinging ${pingprompt.host}...`));
+        const pingicmp = await  icmp.promise.probe(pingprompt.host.split(":")[0]);
+        if (pingicmp.alive === true) {
+            if (pingicmp.host === pingicmp.numeric_host) {
+                console.log(chalk.blue(`icmp:${pingicmp.host} is ${chalk["green"].bold("online")} (response sent after ${pingicmp.time}ms)`));
+            } else {
+                console.log(chalk.blue(`icmp:${pingicmp.host} is ${chalk["green"].bold("online")} (response sent from ${chalk.bold(pingicmp.numeric_host)} after ${pingicmp.time}ms)`));
+            };
+        } else {
+            console.log(chalk.blue(`icmp:${pingicmp.host} is ${chalk["red"].bold("offline")}`));
+        };
+
+        try {
+            await halt(chalk.yellow("Press any key to continue..."));
+        } catch (e) {
+            // Nothing's actually being catched, this is only for cases like SIGINT (Ctrl+C) and stuff like that
+        };
+    };
+
+    return menu();
 };
